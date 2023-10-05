@@ -6,11 +6,13 @@ import {
   FormControl,
   FormErrorMessage,
   Input,
-  VStack
+  VStack,
+  useToast
 } from '@chakra-ui/react';
 import { Layout } from '../components/Layout';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { BaseSyntheticEvent } from 'react';
+import { BaseSyntheticEvent, useState } from 'react';
+import axios from 'axios';
 
 interface FormValue {
   name: string;
@@ -58,8 +60,27 @@ export const CustomerPage = () => {
     }
   });
 
-  const submitHandler = (data: FormValue) => {
-    console.log(data);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+
+  const submitHandler = async (data: FormValue) => {
+    setLoading(true);
+
+    try {
+      const res = await axios.post('http://localhost:5000/order', data=data);
+      console.log(res);
+      toast({
+        description: "Pesanan berhasil dibuat",
+        status: "success",
+        duration: 3000,
+        position: "top",
+        isClosable: true,
+      })
+    } catch (err: unknown) {
+      console.log(err);
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -149,6 +170,7 @@ export const CustomerPage = () => {
           alignSelf="center"
           w="50%"
           onClick={(e: BaseSyntheticEvent) => handleSubmit(submitHandler)(e)}
+          isLoading={loading}
         >
           Pesan
         </Button>

@@ -20,6 +20,8 @@ interface Props {
   id: number;
   name: string;
   addr: string;
+  is_supply_ok?: number;
+  is_valid?: number;
   checkGroup: {
     id: number;
     label: string;
@@ -37,14 +39,16 @@ export const ChefPage = () => {
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const submitHandler = async (type: string) => {
+  const submitHandler = async (type: string, id: number | undefined) => {
     setLoading({
       acc: type === 'Acc',
       reject: type === 'Reject'
     });
 
     try {
-      // handle
+      const is_supply_ok = type === 'Acc' ? 1 : 0;
+      const res = await axios.post(`http://localhost:5000/order/${id}/supply-ok`, {is_supply_ok});
+      console.log(res);
       onClose();
     } catch (err: unknown) {
       console.log(err);
@@ -56,8 +60,9 @@ export const ChefPage = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        // const res = await axios.get('http://localhost:3001/orders');
-        // console.log(res);
+        const res = await axios.get('http://localhost:5000/order');
+        console.log(res);
+        setData(res.data.order);
       } catch (err: unknown) {
         console.log(err);
       }
@@ -74,9 +79,9 @@ export const ChefPage = () => {
             Cek Supply
           </Box>
           <Flex
-            flexDir="row"
+            flexDir="column"
             justifyContent="center"
-            alignItems="center"
+            alignItems="flex-start"
             gap={4}
           >
             {data.length > 0 ? (
@@ -87,6 +92,7 @@ export const ChefPage = () => {
                   alignItems="center"
                   key={idx}
                   gap={10}
+                  w='100%'
                 >
                   <VStack spacing={0} alignItems="flex-start">
                     <Box fontSize="lg" color="black">
@@ -107,16 +113,30 @@ export const ChefPage = () => {
                         {item.addr}
                       </Box>
                     </Box>
+                    {
+                      item.is_supply_ok !== undefined && (
+                        <Box fontSize="lg" color="black">
+                          Status:{' '}
+                          <Box as="span" fontWeight="bold">
+                            Supply {item.is_supply_ok ? 'ok' : 'NOT ok'}
+                          </Box>
+                        </Box>
+                      )
+                    }
                   </VStack>
-                  <IconButton
-                    colorScheme="green"
-                    aria-label="Edit"
-                    icon={<EditIcon />}
-                    onClick={() => {
-                      onOpen();
-                      setModalData(item);
-                    }}
-                  />
+                  {
+                    item.is_supply_ok === undefined && (
+                      <IconButton
+                        colorScheme="green"
+                        aria-label="Edit"
+                        icon={<EditIcon />}
+                        onClick={() => {
+                          onOpen();
+                          setModalData(item);
+                        }}
+                      />
+                    )
+                  }
                 </Flex>
               ))
             ) : (
@@ -182,7 +202,7 @@ export const ChefPage = () => {
             >
               <Button
                 colorScheme="blue"
-                onClick={() => submitHandler('Acc')}
+                onClick={() => submitHandler('Acc', modalData?.id)}
                 isLoading={loading.acc}
                 isDisabled={loading.reject}
               >
@@ -190,7 +210,7 @@ export const ChefPage = () => {
               </Button>
               <Button
                 colorScheme="red"
-                onClick={() => submitHandler('Reject')}
+                onClick={() => submitHandler('Reject', modalData?.id)}
                 isLoading={loading.reject}
                 isDisabled={loading.acc}
               >

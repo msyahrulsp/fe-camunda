@@ -20,6 +20,8 @@ interface Props {
   id: number;
   name: string;
   addr: string;
+  is_supply_ok?: number;
+  is_valid?: number;
   checkGroup: {
     id: number;
     label: string;
@@ -37,7 +39,7 @@ export const ReceptionistPage = () => {
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const submitHandler = async (type: string) => {
+  const submitHandler = async (type: string, id: number | undefined) => {
     setLoading({
       acc: type === 'Acc',
       reject: type === 'Reject'
@@ -45,6 +47,10 @@ export const ReceptionistPage = () => {
 
     try {
       // handle
+      console.log('a');
+      const is_valid = type === 'Acc' ? 1 : 0;
+      const res = await axios.post(`http://localhost:5000/order/${id}/valid`, {is_valid});
+      console.log(res);
       onClose();
     } catch (err: unknown) {
       console.log(err);
@@ -56,8 +62,9 @@ export const ReceptionistPage = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        // const res = await axios.get('http://localhost:3001/orders');
-        // console.log(res);
+        const res = await axios.get('http://localhost:5000/order');
+        setData(res.data.order);
+        console.log(res);
       } catch (err: unknown) {
         console.log(err);
       }
@@ -74,9 +81,9 @@ export const ReceptionistPage = () => {
             List Order
           </Box>
           <Flex
-            flexDir="row"
+            flexDir="column"
             justifyContent="center"
-            alignItems="center"
+            alignItems="flex-start"
             gap={4}
           >
             {data.length > 0 ? (
@@ -87,6 +94,7 @@ export const ReceptionistPage = () => {
                   alignItems="center"
                   key={idx}
                   gap={10}
+                  w="100%"
                 >
                   <VStack spacing={0} alignItems="flex-start">
                     <Box fontSize="lg" color="black">
@@ -107,16 +115,30 @@ export const ReceptionistPage = () => {
                         {item.addr}
                       </Box>
                     </Box>
+                    {
+                      item.is_valid !== undefined && (
+                        <Box fontSize="lg" color="black">
+                          Status:{' '}
+                          <Box as="span" fontWeight="bold">
+                            {item.is_valid ? 'Accepted' : 'Rejected'}
+                          </Box>
+                        </Box>
+                      )
+                    }
                   </VStack>
-                  <IconButton
-                    colorScheme="green"
-                    aria-label="Edit"
-                    icon={<EditIcon />}
-                    onClick={() => {
-                      onOpen();
-                      setModalData(item);
-                    }}
-                  />
+                  {
+                    item.is_valid === undefined && (
+                      <IconButton
+                        colorScheme="green"
+                        aria-label="Edit"
+                        icon={<EditIcon />}
+                        onClick={() => {
+                          onOpen();
+                          setModalData(item);
+                        }}
+                      />
+                    )
+                  }
                 </Flex>
               ))
             ) : (
@@ -182,7 +204,7 @@ export const ReceptionistPage = () => {
             >
               <Button
                 colorScheme="blue"
-                onClick={() => submitHandler('Acc')}
+                onClick={() => submitHandler('Acc', modalData?.id)}
                 isLoading={loading.acc}
                 isDisabled={loading.reject}
               >
@@ -190,7 +212,7 @@ export const ReceptionistPage = () => {
               </Button>
               <Button
                 colorScheme="red"
-                onClick={() => submitHandler('Reject')}
+                onClick={() => submitHandler('Reject', modalData?.id)}
                 isLoading={loading.reject}
                 isDisabled={loading.acc}
               >
